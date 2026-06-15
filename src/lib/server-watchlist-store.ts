@@ -9,6 +9,7 @@ let cachedToken: string | null = null;
 let cachedResponse: ServerWatchlistResponse | null = null;
 let pendingToken: string | null = null;
 let pendingRequest: Promise<ServerWatchlistResponse> | null = null;
+const previousState: Record<string, ServerWatchlistItem[] | null> = {};
 
 const listeners = new Set<() => void>();
 
@@ -82,6 +83,23 @@ export function clearServerWatchlistSnapshot(): void {
   pendingToken = null;
   pendingRequest = null;
   emit();
+}
+
+// 삭제 전 호출하여 상태 백업
+export function saveServerWatchlistBackup(accessToken: string): void {
+  if (cachedToken === accessToken && cachedResponse) {
+    previousState[accessToken] = [...cachedResponse.items];
+  } else {
+    previousState[accessToken] = null;
+  }
+}
+
+// 에러 발생 시 호출 (상태 롤백)
+export function rollbackServerWatchlist(accessToken: string): void {
+  const backupItems = previousState[accessToken];
+  if (backupItems) {
+    setServerWatchlistSnapshot(accessToken, { items: backupItems, count: backupItems.length });
+  }
 }
 
 export async function refreshServerWatchlistSnapshot(
