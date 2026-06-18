@@ -4,9 +4,57 @@ updates:
     directory: /
     schedule:
       interval: weekly
+    labels:
+      - dependencies
+      - github-actions
+    groups:
+      github-actions:
+        patterns:
+          - "*"
     open-pull-requests-limit: 3
   - package-ecosystem: npm
     directory: /
     schedule:
       interval: weekly
-    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - npm
+    groups:
+      production-stack:
+        dependency-type: production
+        update-types:
+          - patch
+          - minor
+        patterns:
+          - next
+          - react
+          - react-dom
+      tooling-patches:
+        dependency-type: development
+        update-types:
+          - patch
+        patterns:
+          - "*"
+      tooling-minors:
+        dependency-type: development
+        update-types:
+          - minor
+        patterns:
+          - "*"
+    ignore:
+      - dependency-name: "@types/node"
+        update-types:
+          - version-update:semver-major
+      - dependency-name: "eslint"
+        update-types:
+          - version-update:semver-major
+      - dependency-name: "@eslint/js"
+        update-types:
+          - version-update:semver-major
+      - dependency-name: "tailwindcss"
+        update-types:
+          - version-update:semver-major
+      - dependency-name: "typescript"
+        update-types:
+          - version-update:semver-major
+    open-pull-requests-limit: 3
