@@ -26,6 +26,8 @@ import type { WatchlistInput } from "@/types/watchlist";
 type EvidenceFilterType = "financial" | "news" | "disclosure" | "price";
 
 const DEFAULT_API_BASE_URL = "http://localhost:8000/v1";
+const DEFAULT_CHAT_SAFETY_DISCLAIMER =
+  "공개 데이터 기반 설명이며 투자 조언이 아닙니다. 원문 확인이 필요합니다.";
 
 export class ApiError extends Error {
   constructor(
@@ -371,6 +373,8 @@ function fromContractSourceType(
 }
 
 function toChatResponse(response: ChatContractResponse): ChatResponse {
+  const safety = response.data.safety;
+  const safetyDisclaimer = (safety?.disclaimer ?? "").trim();
   return {
     session_id: response.data.session_id,
     message_id: null,
@@ -383,14 +387,14 @@ function toChatResponse(response: ChatContractResponse): ChatResponse {
       source_url: citation.url,
       as_of_date: citation.published_at,
     })),
-    policy_status: fromPolicyAction(response.data.safety.policy_action),
-    disclaimer: response.data.safety.disclaimer,
+    policy_status: fromPolicyAction(safety?.policy_action),
+    disclaimer: safetyDisclaimer || DEFAULT_CHAT_SAFETY_DISCLAIMER,
     used_evidence_ids: response.data.citations.map((citation) => citation.id),
   };
 }
 
-function fromPolicyAction(action: "ALLOW" | "REDIRECT" | "BLOCK") {
+function fromPolicyAction(action?: "ALLOW" | "REDIRECT" | "BLOCK") {
   if (action === "ALLOW") return "allowed";
-  if (action === "REDIRECT") return "redirected";
-  return "blocked";
+  if (action === "BLOCK") return "blocked";
+  return "redirected";
 }
