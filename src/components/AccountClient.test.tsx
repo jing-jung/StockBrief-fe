@@ -1,7 +1,14 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { getMe, getUserChatSessions, getUserPreferences, patchMe, putUserPreferences } from "@/lib/api";
+import {
+  getMe,
+  getUserChatSessionDetail,
+  getUserChatSessions,
+  getUserPreferences,
+  patchMe,
+  putUserPreferences,
+} from "@/lib/api";
 import {
   clearAuthSession,
   isCognitoConfigured,
@@ -9,12 +16,18 @@ import {
   startCognitoAuth,
   subscribeAuthSession,
 } from "@/lib/cognito-auth";
-import type { MeResponse, UserChatSessionListResponse, UserPreferencesResponse } from "@/types/api";
+import type {
+  MeResponse,
+  UserChatSessionDetailResponse,
+  UserChatSessionListResponse,
+  UserPreferencesResponse,
+} from "@/types/api";
 
 import { AccountClient } from "./AccountClient";
 
 vi.mock("@/lib/api", () => ({
   getMe: vi.fn(),
+  getUserChatSessionDetail: vi.fn(),
   getUserChatSessions: vi.fn(),
   getUserPreferences: vi.fn(),
   patchMe: vi.fn(),
@@ -32,6 +45,7 @@ vi.mock("@/lib/cognito-auth", () => ({
 const mockedGetMe = vi.mocked(getMe);
 const mockedGetUserPreferences = vi.mocked(getUserPreferences);
 const mockedGetUserChatSessions = vi.mocked(getUserChatSessions);
+const mockedGetUserChatSessionDetail = vi.mocked(getUserChatSessionDetail);
 const mockedPatchMe = vi.mocked(patchMe);
 const mockedPutUserPreferences = vi.mocked(putUserPreferences);
 const mockedClearAuthSession = vi.mocked(clearAuthSession);
@@ -39,16 +53,22 @@ const mockedIsCognitoConfigured = vi.mocked(isCognitoConfigured);
 const mockedReadApiAuthToken = vi.mocked(readApiAuthToken);
 const mockedStartCognitoAuth = vi.mocked(startCognitoAuth);
 const mockedSubscribeAuthSession = vi.mocked(subscribeAuthSession);
+let authSessionCallback: (() => void) | null = null;
 
 describe("AccountClient", () => {
   beforeEach(() => {
+    authSessionCallback = null;
     mockedIsCognitoConfigured.mockReturnValue(true);
     mockedReadApiAuthToken.mockReturnValue("id-token");
-    mockedSubscribeAuthSession.mockReturnValue(() => undefined);
+    mockedSubscribeAuthSession.mockImplementation((callback) => {
+      authSessionCallback = callback;
+      return () => undefined;
+    });
     mockedStartCognitoAuth.mockResolvedValue(undefined);
     mockedGetMe.mockResolvedValue(me());
     mockedGetUserPreferences.mockResolvedValue(preferences("balanced"));
     mockedGetUserChatSessions.mockResolvedValue(chatSessions());
+    mockedGetUserChatSessionDetail.mockResolvedValue(chatSessionDetail());
     mockedPatchMe.mockResolvedValue(me({ nickname: "새별" }));
     mockedPutUserPreferences.mockResolvedValue(preferences("aggressive"));
   });
@@ -85,6 +105,119 @@ describe("AccountClient", () => {
     expect(mockedGetMe).toHaveBeenCalledWith("id-token");
     expect(mockedGetUserPreferences).toHaveBeenCalledWith("id-token");
     expect(mockedGetUserChatSessions).toHaveBeenCalledWith("id-token");
+  });
+
+  it("loads a selected recent chat session detail", async () => {
+    render(<AccountClient />);
+
+    const sessionButton = await screen.findByRole("button", { name: /삼성전자 설명/ });
+    fireEvent.click(sessionButton);
+
+    expect(mockedGetUserChatSessionDetail).toHaveBeenCalledWith("id-token", "chat-1");
+    expect(await screen.findByText("왜 검토 후보로 나왔나요?")).not.toBeNull();
+    expect(screen.getByText("공개 데이터 기준 설명입니다.")).not.toBeNull();
+    expect(screen.getByText("근거 1개")).not.toBeNull();
+    expect(sessionButton.getAttribute("aria-current")).toBe("true");
+  });
+
+  it("keeps only the latest selected chat session detail when requests finish out of order", async () => {
+    const firstRequest = deferred<UserChatSessionDetailResponse>();
+    const secondRequest = deferred<UserChatSessionDetailResponse>();
+    const secondSession = {
+      session_id: "chat-2",
+      ticker: "005380",
+      title: "현대차 설명",
+      created_at: "2026-06-24T10:00:00+09:00",
+      updated_at: "2026-06-24T10:30:00+09:00",
+    };
+
+    mockedGetUserChatSessions.mockResolvedValue({
+      count: 2,
+      items: [...chatSessions().items, secondSession],
+    });
+    mockedGetUserChatSessionDetail.mockImplementation((_token, sessionId) => {
+      if (sessionId === "chat-1") return firstRequest.promise;
+      return secondRequest.promise;
+    });
+
+    render(<AccountClient />);
+
+    const firstSessionButton = await screen.findByRole("button", { name: /삼성전자 설명/ });
+    const secondSessionButton = await screen.findByRole("button", { name: /현대차 설명/ });
+    fireEvent.click(firstSessionButton);
+    fireEvent.click(secondSessionButton);
+
+    await act(async () => {
+      secondRequest.resolve(
+        chatSessionDetail({
+          session: secondSession,
+          userContent: "현대차는 왜 선택됐나요?",
+          assistantContent: "현대차 최신 상세입니다.",
+        }),
+      );
+      await secondRequest.promise;
+    });
+
+    expect(await screen.findByText("현대차 최신 상세입니다.")).not.toBeNull();
+
+    await act(async () => {
+      firstRequest.resolve(
+        chatSessionDetail({
+          assistantContent: "삼성전자 늦은 상세입니다.",
+        }),
+      );
+      await firstRequest.promise;
+    });
+
+    expect(screen.getByText("현대차 최신 상세입니다.")).not.toBeNull();
+    expect(screen.queryByText("삼성전자 늦은 상세입니다.")).toBeNull();
+    expect(firstSessionButton.getAttribute("aria-current")).toBeNull();
+    expect(secondSessionButton.getAttribute("aria-current")).toBe("true");
+    expect(mockedGetUserChatSessionDetail).toHaveBeenNthCalledWith(1, "id-token", "chat-1");
+    expect(mockedGetUserChatSessionDetail).toHaveBeenNthCalledWith(2, "id-token", "chat-2");
+  });
+
+  it("clears stale chat detail loading when the auth token changes", async () => {
+    const detailRequest = deferred<UserChatSessionDetailResponse>();
+    mockedGetUserChatSessionDetail.mockReturnValue(detailRequest.promise);
+
+    render(<AccountClient />);
+
+    fireEvent.click(await screen.findByRole("button", { name: /삼성전자 설명/ }));
+
+    expect(await screen.findByText("대화 내용을 불러오는 중입니다.")).not.toBeNull();
+
+    mockedReadApiAuthToken.mockReturnValue("rotated-id-token");
+    await act(async () => {
+      authSessionCallback?.();
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText("대화 내용을 불러오는 중입니다.")).toBeNull();
+    });
+
+    await act(async () => {
+      detailRequest.resolve(
+        chatSessionDetail({
+          assistantContent: "이전 token의 늦은 상세입니다.",
+        }),
+      );
+      await detailRequest.promise;
+    });
+
+    expect(screen.queryByText("이전 token의 늦은 상세입니다.")).toBeNull();
+    expect(mockedGetUserChatSessionDetail).toHaveBeenCalledWith("id-token", "chat-1");
+  });
+
+  it("keeps recent chat sessions visible when a selected session detail fails", async () => {
+    mockedGetUserChatSessionDetail.mockRejectedValue(new Error("detail failed"));
+
+    render(<AccountClient />);
+
+    fireEvent.click(await screen.findByRole("button", { name: /삼성전자 설명/ }));
+
+    expect(await screen.findByText("대화 내용을 불러오지 못했습니다.")).not.toBeNull();
+    expect(screen.getByRole("button", { name: /삼성전자 설명/ })).not.toBeNull();
   });
 
   it("keeps the account form available when only recent chat sessions fail", async () => {
@@ -210,6 +343,38 @@ function chatSessions(): UserChatSessionListResponse {
         title: "삼성전자 설명",
         created_at: "2026-06-24T09:00:00+09:00",
         updated_at: "2026-06-24T09:30:00+09:00",
+      },
+    ],
+  };
+}
+
+function chatSessionDetail(
+  overrides: {
+    session?: UserChatSessionDetailResponse["session"];
+    userContent?: string;
+    assistantContent?: string;
+  } = {},
+): UserChatSessionDetailResponse {
+  return {
+    session: overrides.session ?? chatSessions().items[0],
+    messages: [
+      {
+        message_id: "msg-user-1",
+        role: "user",
+        content: overrides.userContent ?? "왜 검토 후보로 나왔나요?",
+        ticker: overrides.session?.ticker ?? "005930",
+        citations: [],
+        safety_flags: [],
+        created_at: "2026-06-24T09:30:00+09:00",
+      },
+      {
+        message_id: "msg-assistant-1",
+        role: "assistant",
+        content: overrides.assistantContent ?? "공개 데이터 기준 설명입니다.",
+        ticker: overrides.session?.ticker ?? "005930",
+        citations: [{ evidence_id: "ev-1" }],
+        safety_flags: [],
+        created_at: "2026-06-24T09:30:01+09:00",
       },
     ],
   };

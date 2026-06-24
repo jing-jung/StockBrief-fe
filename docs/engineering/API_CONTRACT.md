@@ -103,6 +103,7 @@ Protected endpoints:
 - `POST /v1/me/watchlist/import`
 - `GET /v1/me/chat-sessions`
 - `POST /v1/me/chat-sessions`
+- `GET /v1/me/chat-sessions/{session_id}`
 
 Protected request header:
 
@@ -577,6 +578,50 @@ Response `200`:
   "sector": "반도체",
   "memo": "공개 데이터 기준 추가 확인 메모",
   "saved_at": "2026-06-09T09:00:00Z"
+}
+```
+
+### GET /v1/me/chat-sessions/{session_id}
+
+Returns one authenticated chat session and its stored messages. The backend
+scopes the lookup to the current Cognito user. A missing or cross-user session
+returns `404`.
+
+Response `200`:
+
+```json
+{
+  "session": {
+    "session_id": "chat_20260624_001",
+    "ticker": "005930",
+    "title": "삼성전자 설명",
+    "created_at": "2026-06-24T09:00:00Z",
+    "updated_at": "2026-06-24T09:05:00Z"
+  },
+  "messages": [
+    {
+      "message_id": "msg_20260624_001",
+      "role": "user",
+      "content": "왜 검토 후보로 나왔나요?",
+      "ticker": "005930",
+      "citations": [],
+      "safety_flags": [],
+      "created_at": "2026-06-24T09:00:01Z"
+    },
+    {
+      "message_id": "msg_20260624_002",
+      "role": "assistant",
+      "content": "공개 데이터 기준 설명입니다.",
+      "ticker": "005930",
+      "citations": [
+        {
+          "evidence_id": "ev_mock_005930_news"
+        }
+      ],
+      "safety_flags": [],
+      "created_at": "2026-06-24T09:00:02Z"
+    }
+  ]
 }
 ```
 

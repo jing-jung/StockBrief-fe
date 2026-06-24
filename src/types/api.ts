@@ -164,3 +164,18 @@ export interface UserChatSessionListResponse {
   items: UserChatSession[];
   count: number;
 }
+
+export interface UserChatMessage {
+  message_id: string;
+  role: string;
+  content: string;
+  ticker: string | null;
+  citations: Record<string, unknown>[];
+  safety_flags: Record<string, unknown>[];
+  created_at: string;
+}
+
+export interface UserChatSessionDetailResponse {
+  session: UserChatSession;
+  messages: UserChatMessage[];
+}

@@ -18,6 +18,7 @@ import type {
   StockDetail,
   StockEvidenceResponse,
   StockSearchResponse,
+  UserChatSessionDetailResponse,
   UserChatSessionListResponse,
   UserPreferencesResponse,
 } from "@/types/api";
@@ -299,6 +300,16 @@ export async function getUserChatSessions(
   accessToken: string,
 ): Promise<UserChatSessionListResponse> {
   return authorizedRequest<UserChatSessionListResponse>("/me/chat-sessions", accessToken);
+}
+
+export async function getUserChatSessionDetail(
+  accessToken: string,
+  sessionId: string,
+): Promise<UserChatSessionDetailResponse> {
+  return authorizedRequest<UserChatSessionDetailResponse>(
+    `/me/chat-sessions/${encodeURIComponent(sessionId)}`,
+    accessToken,
+  );
 }
 
 function toRecommendationCandidate(item: StockCandidateContractItem): RecommendationCandidate {
