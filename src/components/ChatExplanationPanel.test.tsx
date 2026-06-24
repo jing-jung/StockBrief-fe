@@ -123,6 +123,41 @@ describe("ChatExplanationPanel", () => {
     expect(mockedPostChat).not.toHaveBeenCalled();
   });
 
+  it("continues an authenticated chat from an initial session", async () => {
+    mockedReadApiAuthToken.mockReturnValue("id-token");
+
+    render(<ChatExplanationPanel ticker="005930" initialSessionId="chat-session-existing" />);
+
+    expect(screen.getByText("이전 대화에 이어서 질문합니다.")).not.toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "왜 추천됐나요?" }));
+
+    await waitFor(() => {
+      expect(mockedPostAuthenticatedChat).toHaveBeenCalledWith("id-token", {
+        ticker: "005930",
+        message: "왜 추천됐나요?",
+        session_id: "chat-session-existing",
+        title: "005930 추천 이유 설명",
+      });
+    });
+    expect(mockedPostChat).not.toHaveBeenCalled();
+  });
+
+  it("does not send an initial session without an auth token", async () => {
+    render(<ChatExplanationPanel ticker="005930" initialSessionId="chat-session-existing" />);
+
+    expect(screen.getByText("로그인된 세션에서만 이전 대화를 이어갈 수 있습니다.")).not.toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "왜 추천됐나요?" }));
+
+    await waitFor(() => {
+      expect(mockedPostChat).toHaveBeenCalledWith({
+        ticker: "005930",
+        message: "왜 추천됐나요?",
+        title: "005930 추천 이유 설명",
+      });
+    });
+    expect(mockedPostAuthenticatedChat).not.toHaveBeenCalled();
+  });
+
   it("shows a retryable message and logs safe context when the chat API fails", async () => {
     const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
     const apiError = Object.assign(new Error("API unavailable"), {

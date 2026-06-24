@@ -16,6 +16,7 @@ import {
   startCognitoAuth,
   subscribeAuthSession,
 } from "@/lib/cognito-auth";
+import { takeChatResumeSession } from "@/lib/chat-resume";
 import type {
   MeResponse,
   UserChatSessionDetailResponse,
@@ -75,6 +76,7 @@ describe("AccountClient", () => {
 
   afterEach(() => {
     cleanup();
+    window.sessionStorage.clear();
     vi.clearAllMocks();
   });
 
@@ -117,6 +119,11 @@ describe("AccountClient", () => {
     expect(await screen.findByText("왜 검토 후보로 나왔나요?")).not.toBeNull();
     expect(screen.getByText("공개 데이터 기준 설명입니다.")).not.toBeNull();
     expect(screen.getByText("근거 1개")).not.toBeNull();
+    const resumeLink = screen.getByRole("link", { name: "이 대화 이어가기" });
+    expect(resumeLink.getAttribute("href")).toBe("/chat?ticker=005930");
+    resumeLink.addEventListener("click", (event) => event.preventDefault());
+    fireEvent.click(resumeLink);
+    expect(takeChatResumeSession("005930")).toBe("chat-1");
     expect(sessionButton.getAttribute("aria-current")).toBe("true");
   });
 

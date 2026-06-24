@@ -37,17 +37,22 @@ function logChatFailure(error: unknown, context: ChatFailureContext) {
   logClientError("Chat explanation request failed.", error, context);
 }
 
-export function ChatExplanationPanel({ ticker }: { ticker: string }) {
+interface ChatExplanationPanelProps {
+  ticker: string;
+  initialSessionId?: string | null;
+}
+
+export function ChatExplanationPanel({ ticker, initialSessionId = null }: ChatExplanationPanelProps) {
   const [message, setMessage] = useState(DEFAULT_MESSAGE);
   const [response, setResponse] = useState<ChatResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [accessToken, setAccessToken] = useState<string | null>(null);
-  const [sessionId, setSessionId] = useState<string | null>(null);
+  const [accessToken, setAccessToken] = useState<string | null>(() => readApiAuthToken());
+  const [sessionId, setSessionId] = useState<string | null>(initialSessionId);
+  const resumeSessionId = accessToken ? sessionId : null;
 
   useEffect(() => {
     const sync = () => setAccessToken(readApiAuthToken());
-    sync();
     return subscribeAuthSession(sync);
   }, []);
 
@@ -58,7 +63,7 @@ export function ChatExplanationPanel({ ticker }: { ticker: string }) {
       const body = {
         ticker,
         message,
-        ...(sessionId ? { session_id: sessionId } : {}),
+        ...(resumeSessionId ? { session_id: resumeSessionId } : {}),
         title: `${ticker} 추천 이유 설명`,
       };
       const next = accessToken
@@ -72,7 +77,7 @@ export function ChatExplanationPanel({ ticker }: { ticker: string }) {
       logChatFailure(caughtError, {
         ticker,
         authenticated: Boolean(accessToken),
-        hasSession: Boolean(sessionId),
+        hasSession: Boolean(resumeSessionId),
       });
       setError("설명을 불러오지 못했습니다. 잠시 후 다시 시도해 주세요.");
     } finally {
@@ -88,6 +93,11 @@ export function ChatExplanationPanel({ ticker }: { ticker: string }) {
           <p className="mt-1 text-sm leading-6 text-muted">
             저장된 점수, 추천 이유, 근거, 리스크만 사용해 설명합니다.
           </p>
+          {resumeSessionId ? (
+            <p className="mt-1 text-xs text-muted">이전 대화에 이어서 질문합니다.</p>
+          ) : sessionId ? (
+            <p className="mt-1 text-xs text-caution">로그인된 세션에서만 이전 대화를 이어갈 수 있습니다.</p>
+          ) : null}
         </div>
         <button
           type="button"
