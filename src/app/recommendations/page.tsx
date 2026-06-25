@@ -1,6 +1,8 @@
 import { Suspense } from "react";
 
-import { RecommendationPreferenceSync } from "@/components/RecommendationPreferenceSync";
+import { cookies } from "next/headers";
+
+import { MissingCookiePreferenceSync } from "@/components/MissingCookiePreferenceSync";
 import { RecommendationsList } from "@/components/RecommendationsList";
 
 export const dynamic = "force-dynamic";
@@ -11,10 +13,13 @@ type RecommendationsPageProps = {
 
 export default async function RecommendationsPage({ searchParams }: RecommendationsPageProps) {
   const params = await searchParams;
+  const cookieStore = await cookies();
+  const hasCookie = cookieStore.has("stockbrief_risk_profile");
+
   return (
     <>
       <Suspense fallback={null}>
-        <RecommendationPreferenceSync />
+        <MissingCookiePreferenceSync hasCookie={hasCookie} />
       </Suspense>
       <RecommendationsList searchParams={params} />
     </>

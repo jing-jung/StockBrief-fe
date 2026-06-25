@@ -52,9 +52,12 @@ export function readApiAuthToken(): string | null {
   return session?.idToken ?? session?.accessToken ?? null;
 }
 
+import { clearRiskProfileCookie } from "./preference-cookie";
+
 export function clearAuthSession(): void {
   if (typeof window === "undefined") return;
   window.sessionStorage.removeItem(AUTH_SESSION_KEY);
+  clearRiskProfileCookie();
   window.dispatchEvent(new CustomEvent(AUTH_CHANGED_EVENT));
 }
 

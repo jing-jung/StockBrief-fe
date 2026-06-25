@@ -3,10 +3,12 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-import { getMe } from "@/lib/api";
+import { getMe, getUserPreferences } from "@/lib/api";
 import { logClientError } from "@/lib/client-telemetry";
 import { completeCognitoCallback, readApiAuthToken } from "@/lib/cognito-auth";
 import { importLocalWatchlistOnce } from "@/lib/server-watchlist-store";
+import { clearRiskProfileCookie, setRiskProfileCookie } from "@/lib/preference-cookie";
+import { readRiskProfile } from "@/lib/risk-profile";
 
 type CallbackStatus = "loading" | "done" | "profile-error" | "sync-error" | "error";
 type AuthCallbackFailureStage = "callback" | "token" | "profile" | "watchlist_import";
@@ -40,6 +42,7 @@ export function AuthCallbackClient({
     const authState = state;
     let cancelled = false;
     async function complete() {
+      clearRiskProfileCookie();
       try {
         await completeCognitoCallback(authCode, authState);
       } catch (caughtError) {
@@ -57,7 +60,17 @@ export function AuthCallbackClient({
 
       let me: Awaited<ReturnType<typeof getMe>>;
       try {
-        me = await getMe(token);
+        const [profileResponse, preferencesResponse] = await Promise.all([
+          getMe(token),
+          getUserPreferences(token).catch(() => null)
+        ]);
+        me = profileResponse;
+        if (preferencesResponse) {
+          const riskProfile = readRiskProfile(preferencesResponse.preferences.risk_profile);
+          if (riskProfile) {
+            setRiskProfileCookie(riskProfile);
+          }
+        }
       } catch (caughtError) {
         logAuthCallbackFailure("profile", caughtError);
         if (!cancelled) setStatus("profile-error");

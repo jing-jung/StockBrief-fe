@@ -1,3 +1,4 @@
+import { cookies } from "next/headers";
 import { CandidateTable } from "@/components/CandidateTable";
 import { ErrorState } from "@/components/ErrorState";
 import { getRecommendationCandidates } from "@/lib/api";
@@ -8,7 +9,12 @@ type RecommendationsListProps = {
 };
 
 export async function RecommendationsList({ searchParams }: RecommendationsListProps) {
-  const riskProfile = riskProfileQueryValue(searchParams.risk_profile);
+  let rawProfile = searchParams.risk_profile;
+  if (!rawProfile) {
+    const cookieStore = await cookies();
+    rawProfile = cookieStore.get("stockbrief_risk_profile")?.value;
+  }
+  const riskProfile = riskProfileQueryValue(rawProfile);
   let candidates: Awaited<ReturnType<typeof getRecommendationCandidates>>;
 
   try {

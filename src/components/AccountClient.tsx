@@ -19,6 +19,7 @@ import {
   subscribeAuthSession,
 } from "@/lib/cognito-auth";
 import { storeChatResumeSession } from "@/lib/chat-resume";
+import { setRiskProfileCookie } from "@/lib/preference-cookie";
 import type {
   MeResponse,
   RiskProfile,
@@ -113,7 +114,9 @@ export function AccountClient() {
         setMe(profile);
         setNickname(profile.nickname ?? "");
         setUserPreferences(preferenceValues);
-        setRiskProfile(readRiskProfile(preferenceValues.risk_profile));
+        const initialRiskProfile = readRiskProfile(preferenceValues.risk_profile);
+        setRiskProfile(initialRiskProfile);
+        setRiskProfileCookie(initialRiskProfile);
         setNotificationEmailEnabled(notificationPreferences.emailEnabled);
         setNotificationDigest(notificationPreferences.digest);
       } catch {
@@ -195,6 +198,7 @@ export function AccountClient() {
         });
         const savedPreferences = await putUserPreferences(accessToken, preferences);
         setUserPreferences(savedPreferences.preferences);
+        setRiskProfileCookie(riskProfile);
         setMessage("계정 설정을 저장했습니다.");
       } catch {
         setError("닉네임은 저장됐지만 선호 설정 저장에 실패했습니다.");

@@ -2,7 +2,7 @@ import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { getMe } from "@/lib/api";
+import { getMe, getUserPreferences } from "@/lib/api";
 import { completeCognitoCallback, readApiAuthToken } from "@/lib/cognito-auth";
 import { importLocalWatchlistOnce } from "@/lib/server-watchlist-store";
 import type { MeResponse } from "@/types/api";
@@ -27,6 +27,7 @@ vi.mock("next/link", () => ({
 
 vi.mock("@/lib/api", () => ({
   getMe: vi.fn(),
+  getUserPreferences: vi.fn(),
 }));
 
 vi.mock("@/lib/cognito-auth", () => ({
@@ -41,6 +42,7 @@ vi.mock("@/lib/server-watchlist-store", () => ({
 const mockedCompleteCognitoCallback = vi.mocked(completeCognitoCallback);
 const mockedReadApiAuthToken = vi.mocked(readApiAuthToken);
 const mockedGetMe = vi.mocked(getMe);
+const mockedGetUserPreferences = vi.mocked(getUserPreferences);
 const mockedImportLocalWatchlistOnce = vi.mocked(importLocalWatchlistOnce);
 
 describe("AuthCallbackClient", () => {
@@ -48,6 +50,9 @@ describe("AuthCallbackClient", () => {
     mockedCompleteCognitoCallback.mockResolvedValue(undefined);
     mockedReadApiAuthToken.mockReturnValue("id-token");
     mockedGetMe.mockResolvedValue(me());
+    mockedGetUserPreferences.mockResolvedValue({
+      preferences: { risk_profile: "balanced" },
+    } as unknown as Awaited<ReturnType<typeof getUserPreferences>>);
     mockedImportLocalWatchlistOnce.mockResolvedValue({
       importedCount: 2,
       skippedExistingCount: 0,
