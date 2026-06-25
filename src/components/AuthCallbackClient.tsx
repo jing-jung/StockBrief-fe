@@ -7,7 +7,7 @@ import { getMe, getUserPreferences } from "@/lib/api";
 import { logClientError } from "@/lib/client-telemetry";
 import { completeCognitoCallback, readApiAuthToken } from "@/lib/cognito-auth";
 import { importLocalWatchlistOnce } from "@/lib/server-watchlist-store";
-import { setRiskProfileCookie } from "@/lib/preference-cookie";
+import { clearRiskProfileCookie, setRiskProfileCookie } from "@/lib/preference-cookie";
 import { readRiskProfile } from "@/lib/risk-profile";
 
 type CallbackStatus = "loading" | "done" | "profile-error" | "sync-error" | "error";
@@ -42,6 +42,7 @@ export function AuthCallbackClient({
     const authState = state;
     let cancelled = false;
     async function complete() {
+      clearRiskProfileCookie();
       try {
         await completeCognitoCallback(authCode, authState);
       } catch (caughtError) {

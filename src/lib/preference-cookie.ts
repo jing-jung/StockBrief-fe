@@ -1,6 +1,8 @@
+import type { RiskProfile } from "@/types/api";
+
 const COOKIE_NAME = "stockbrief_risk_profile";
 
-export function setRiskProfileCookie(profile: string): void {
+export function setRiskProfileCookie(profile: RiskProfile): void {
   if (typeof document === "undefined") return;
   const maxAge = 60 * 60 * 24 * 365; // 1 year
   document.cookie = `${COOKIE_NAME}=${profile}; path=/; max-age=${maxAge}; samesite=lax`;
