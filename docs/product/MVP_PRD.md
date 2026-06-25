@@ -74,6 +74,8 @@ MVP 기능 고정 목록:
 
 P1 must not remove or block the P0 guest experience. Users who are not logged in continue using localStorage watchlist and public recommendation APIs.
 
+Server-side preferences use a simple whole-document save policy in P1. The account screen preserves fields from the latest loaded preferences snapshot when it saves known controls, but concurrent edits from another browser or device are resolved by last successful save. Field-level conflict handling is deferred until concurrent preference editing becomes a demonstrated product need.
+
 ### Out Of Scope For MVP
 
 - Trading execution.

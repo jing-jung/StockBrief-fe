@@ -506,6 +506,22 @@ Response `200`:
 
 ### PUT /v1/me/preferences
 
+Replaces the current user's full preferences document. The client may merge
+known form fields into the latest `GET /v1/me/preferences` snapshot before
+calling `PUT`, but the backend treats each successful `PUT` as the complete
+stored value.
+
+Concurrency policy:
+
+- Current P1 behavior is last-write-wins.
+- The API does not expose field-level `PATCH`, version checks, `ETag`, or
+  compare-and-swap semantics.
+- A client must not assume that unchanged fields from an older snapshot are
+  protected from a newer save in another browser session.
+- If concurrent preference editing becomes product-critical, the next backend
+  API change should add field-level merge semantics or versioned writes before
+  frontend optimistic conflict handling.
+
 Request:
 
 ```json
