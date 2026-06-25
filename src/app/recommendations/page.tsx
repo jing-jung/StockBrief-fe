@@ -1,3 +1,6 @@
+import { Suspense } from "react";
+
+import { RecommendationPreferenceSync } from "@/components/RecommendationPreferenceSync";
 import { RecommendationsList } from "@/components/RecommendationsList";
 
 export const dynamic = "force-dynamic";
@@ -8,5 +11,12 @@ type RecommendationsPageProps = {
 
 export default async function RecommendationsPage({ searchParams }: RecommendationsPageProps) {
   const params = await searchParams;
-  return <RecommendationsList searchParams={params} />;
+  return (
+    <>
+      <Suspense fallback={null}>
+        <RecommendationPreferenceSync />
+      </Suspense>
+      <RecommendationsList searchParams={params} />
+    </>
+  );
 }
