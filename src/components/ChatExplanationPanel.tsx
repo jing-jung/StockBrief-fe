@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 import { postAuthenticatedChat, postChat } from "@/lib/api";
 import { logClientError } from "@/lib/client-telemetry";
+import type { ClientLogContext } from "@/lib/client-telemetry";
 import { readApiAuthToken, subscribeAuthSession } from "@/lib/cognito-auth";
 import { evidenceTypeLabel, formatDate } from "@/lib/format";
 import type { ChatResponse } from "@/types/api";
@@ -15,11 +16,9 @@ const policyStatusCopy: Record<ChatResponse["policy_status"], string> = {
   redirected: "안전 안내",
   blocked: "응답 제한",
 };
-type ChatFailureContext = {
-  ticker: string;
-  authenticated: boolean;
-  hasSession: boolean;
-};
+type ChatFailureContext = Required<
+  Pick<ClientLogContext, "ticker" | "authenticated" | "hasSession">
+>;
 
 function isSafeExternalUrl(value: string | null): value is string {
   if (!value) {

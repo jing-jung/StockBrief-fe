@@ -58,4 +58,15 @@ describe("client telemetry", () => {
     expect(serializedLogs).not.toContain("auth-state");
     expect(serializedLogs).not.toContain("id-token");
   });
+
+  it("rejects unsupported context keys at compile time", () => {
+    const verifyContextTypeErrors = () => {
+      logClientError("Auth callback flow failed.", new Error("failed"), {
+        // @ts-expect-error Client telemetry context must use a reviewed safe key.
+        email: "user@example.com",
+      });
+    };
+
+    expect(typeof verifyContextTypeErrors).toBe("function");
+  });
 });

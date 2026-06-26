@@ -5,13 +5,13 @@ import { useEffect, useState } from "react";
 
 import { getMe, getUserPreferences } from "@/lib/api";
 import { logClientError } from "@/lib/client-telemetry";
+import type { ClientTelemetryStage } from "@/lib/client-telemetry";
 import { completeCognitoCallback, readApiAuthToken } from "@/lib/cognito-auth";
 import { importLocalWatchlistOnce } from "@/lib/server-watchlist-store";
 import { clearRiskProfileCookie, setRiskProfileCookie } from "@/lib/preference-cookie";
 import { readRiskProfile } from "@/lib/risk-profile";
 
 type CallbackStatus = "loading" | "done" | "profile-error" | "sync-error" | "error";
-type AuthCallbackFailureStage = "callback" | "token" | "profile" | "watchlist_import";
 
 interface SyncSummary {
   importedCount: number;
@@ -19,7 +19,7 @@ interface SyncSummary {
   alreadySynced: boolean;
 }
 
-function logAuthCallbackFailure(stage: AuthCallbackFailureStage, error: unknown): void {
+function logAuthCallbackFailure(stage: ClientTelemetryStage, error: unknown): void {
   logClientError("Auth callback flow failed.", error, { stage });
 }
 

@@ -20,9 +20,16 @@ debugging which step failed.
 ## Safe Error Shape
 
 Use `logClientError(message, error, context)` for client-side failures. The
-helper logs:
+helper accepts only reviewed context keys:
 
-- caller-provided safe context such as `stage`, `ticker`, or `policy_status`
+- `stage`
+- `ticker`
+- `authenticated`
+- `hasSession`
+- `policy_status`
+
+It logs those safe context fields plus:
+
 - `error.name`
 - numeric `error.status`, when present
 

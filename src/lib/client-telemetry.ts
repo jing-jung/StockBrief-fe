@@ -1,4 +1,12 @@
-type ClientLogContext = Record<string, boolean | number | string | null | undefined>;
+export type ClientTelemetryStage = "callback" | "token" | "profile" | "watchlist_import";
+
+export type ClientLogContext = {
+  stage?: ClientTelemetryStage;
+  ticker?: string;
+  authenticated?: boolean;
+  hasSession?: boolean;
+  policy_status?: "allowed" | "redirected" | "blocked";
+};
 
 interface SafeErrorDetails {
   name: string;
