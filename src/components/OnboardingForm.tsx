@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 
+import { riskProfileLabel } from "@/lib/format";
+
 const storageKey = "stockbrief:preferences";
 const onboardingKey = "stockbrief:onboarding_completed";
 
@@ -14,6 +16,8 @@ const defaultPreferences: Preferences = {
   riskProfile: "balanced",
   markets: ["KOSPI", "KOSDAQ"],
 };
+
+const riskProfiles = ["conservative", "balanced", "aggressive"] as const;
 
 export function OnboardingForm() {
   const [preferences, setPreferences] = useState<Preferences>(defaultPreferences);
@@ -54,7 +58,7 @@ export function OnboardingForm() {
         <fieldset className="space-y-3">
           <legend className="font-semibold text-ink">리스크 성향</legend>
           <div className="grid gap-2 sm:grid-cols-3">
-            {(["conservative", "balanced", "aggressive"] as const).map((profile) => (
+            {riskProfiles.map((profile) => (
               <button
                 key={profile}
                 type="button"
@@ -65,7 +69,7 @@ export function OnboardingForm() {
                     : "border-line bg-white text-muted hover:text-ink"
                 }`}
               >
-                {profile}
+                {riskProfileLabel(profile)}
               </button>
             ))}
           </div>

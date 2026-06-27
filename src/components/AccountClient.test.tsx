@@ -87,7 +87,7 @@ describe("AccountClient", () => {
     render(<AccountClient />);
 
     expect(screen.getByRole("status").textContent).toBe("계정 정보를 확인하는 중입니다.");
-    expect(screen.queryByText("표시할 email 없음")).toBeNull();
+    expect(screen.queryByText("표시할 이메일 없음")).toBeNull();
     expect(screen.queryByText("계정 정보를 표시할 수 없습니다. 다시 로그인해 주세요.")).toBeNull();
 
     profileRequest.resolve(me());
@@ -109,8 +109,14 @@ describe("AccountClient", () => {
 
     expect(await screen.findByText("user@example.com")).not.toBeNull();
     expect((screen.getByLabelText("닉네임") as HTMLInputElement).value).toBe("기존닉네임");
-    expect((screen.getByLabelText("선호 리스크") as HTMLSelectElement).value).toBe("conservative");
-    expect((screen.getByLabelText(/email 알림 받기/) as HTMLInputElement).checked).toBe(true);
+    expect((screen.getByLabelText("리스크 성향") as HTMLSelectElement).value).toBe("conservative");
+    expect(screen.getByRole("option", { name: "안정형" })).not.toBeNull();
+    expect(screen.getByRole("option", { name: "균형형" })).not.toBeNull();
+    expect(screen.getByRole("option", { name: "적극형" })).not.toBeNull();
+    expect(screen.queryByRole("option", { name: "conservative" })).toBeNull();
+    expect(screen.queryByRole("option", { name: "balanced" })).toBeNull();
+    expect(screen.queryByRole("option", { name: "aggressive" })).toBeNull();
+    expect((screen.getByLabelText(/이메일 알림 받기/) as HTMLInputElement).checked).toBe(true);
     expect((screen.getByLabelText("관심종목 요약") as HTMLSelectElement).value).toBe("daily");
     expect(screen.getByText("삼성전자 설명")).not.toBeNull();
     expect(mockedGetMe).toHaveBeenCalledWith("id-token");
@@ -266,10 +272,10 @@ describe("AccountClient", () => {
 
     const nicknameInput = await screen.findByLabelText("닉네임");
     fireEvent.change(nicknameInput, { target: { value: "  새별  " } });
-    fireEvent.change(screen.getByLabelText("선호 리스크"), {
+    fireEvent.change(screen.getByLabelText("리스크 성향"), {
       target: { value: "aggressive" },
     });
-    fireEvent.click(screen.getByLabelText(/email 알림 받기/));
+    fireEvent.click(screen.getByLabelText(/이메일 알림 받기/));
     fireEvent.change(screen.getByLabelText("관심종목 요약"), {
       target: { value: "weekly" },
     });
@@ -308,7 +314,7 @@ describe("AccountClient", () => {
 
     const nicknameInput = await screen.findByLabelText("닉네임");
     fireEvent.change(nicknameInput, { target: { value: "새별" } });
-    fireEvent.change(screen.getByLabelText("선호 리스크"), {
+    fireEvent.change(screen.getByLabelText("리스크 성향"), {
       target: { value: "aggressive" },
     });
     fireEvent.click(screen.getByRole("button", { name: "저장" }));
@@ -332,7 +338,7 @@ describe("AccountClient", () => {
 
     expect(await screen.findByText("로그인 상태를 확인하지 못했습니다. 다시 로그인해 주세요.")).not.toBeNull();
     expect(screen.getByText("계정 정보를 표시할 수 없습니다. 다시 로그인해 주세요.")).not.toBeNull();
-    expect(screen.queryByText("표시할 email 없음")).toBeNull();
+    expect(screen.queryByText("표시할 이메일 없음")).toBeNull();
   });
 
   it("shows disabled auth actions when Cognito is not configured", async () => {
@@ -341,7 +347,7 @@ describe("AccountClient", () => {
 
     render(<AccountClient />);
 
-    expect(await screen.findByText(/Cognito Hosted UI 환경변수가 아직 설정되지 않았습니다/)).not.toBeNull();
+    expect(await screen.findByText(/로그인 환경이 아직 설정되지 않았습니다/)).not.toBeNull();
     expect((screen.getByRole("button", { name: "이메일 로그인" }) as HTMLButtonElement).disabled).toBe(true);
     expect((screen.getByRole("button", { name: "이메일 회원가입" }) as HTMLButtonElement).disabled).toBe(true);
     expect(mockedGetMe).not.toHaveBeenCalled();

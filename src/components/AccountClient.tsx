@@ -19,6 +19,7 @@ import {
   subscribeAuthSession,
 } from "@/lib/cognito-auth";
 import { storeChatResumeSession } from "@/lib/chat-resume";
+import { riskProfileLabel } from "@/lib/format";
 import { setRiskProfileCookie } from "@/lib/preference-cookie";
 import type {
   MeResponse,
@@ -233,7 +234,7 @@ export function AccountClient() {
 
         {!configured ? (
           <div className="mt-6 rounded-md border border-line bg-field px-4 py-4 text-sm leading-6 text-muted">
-            Cognito Hosted UI 환경변수가 아직 설정되지 않았습니다. 로컬에서는 게스트 관심종목을 계속 사용할 수 있습니다.
+            로그인 환경이 아직 설정되지 않았습니다. 로컬에서는 게스트 관심종목을 계속 사용할 수 있습니다.
           </div>
         ) : null}
 
@@ -264,8 +265,8 @@ export function AccountClient() {
           <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_1fr]">
             <div className="space-y-4">
               <div>
-                <div className="text-xs font-medium text-muted">email</div>
-                <div className="mt-1 text-sm font-semibold text-ink">{me?.email ?? "표시할 email 없음"}</div>
+                <div className="text-xs font-medium text-muted">이메일</div>
+                <div className="mt-1 text-sm font-semibold text-ink">{me?.email ?? "표시할 이메일 없음"}</div>
                 <div className="mt-1 text-xs text-muted">
                   {me?.email_verified ? "이메일 인증 완료" : "이메일 인증이 필요합니다"}
                 </div>
@@ -282,15 +283,15 @@ export function AccountClient() {
               </label>
 
               <label className="block">
-                <span className="text-xs font-medium text-muted">선호 리스크</span>
+                <span className="text-xs font-medium text-muted">리스크 성향</span>
                 <select
                   value={riskProfile}
                   onChange={(event) => setRiskProfile(readRiskProfile(event.target.value))}
                   className="mt-1 w-full rounded-md border border-line bg-field px-3 py-2 text-sm text-ink outline-none transition focus:bg-white focus:shadow-focus"
                 >
-                  <option value="conservative">conservative</option>
-                  <option value="balanced">balanced</option>
-                  <option value="aggressive">aggressive</option>
+                  <option value="conservative">{riskProfileLabel("conservative")}</option>
+                  <option value="balanced">{riskProfileLabel("balanced")}</option>
+                  <option value="aggressive">{riskProfileLabel("aggressive")}</option>
                 </select>
               </label>
 
@@ -304,7 +305,7 @@ export function AccountClient() {
                     className="mt-1 h-4 w-4 rounded border-line text-accent focus:ring-accent"
                   />
                   <span>
-                    <span className="block font-medium">email 알림 받기</span>
+                    <span className="block font-medium">이메일 알림 받기</span>
                     <span className="mt-1 block text-xs leading-5 text-muted">
                       관심종목과 대화 이력 기준의 요약 알림을 받습니다.
                     </span>
