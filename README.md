@@ -77,6 +77,15 @@ pnpm run typecheck  # TypeScript 타입 체크
 pnpm run build      # 프로덕션 빌드
 ```
 
+Hosted Amplify 화면에서 추천 후보와 상세 근거가 실제로 보이는지 확인할 때는
+다음 smoke를 사용한다. 결과에는 HTTP 상태와 화면 요소 확인값만 남기며, raw
+HTML이나 provider 원문은 출력하지 않는다.
+
+```bash
+STOCKBRIEF_HOSTED_URL="https://main.d20hgo2k8atldu.amplifyapp.com" \
+pnpm run smoke:hosted-evidence -- --ticker 005930
+```
+
 ## 브랜치 정책
 
 - `main`: 보호 브랜치, 직접 push 금지

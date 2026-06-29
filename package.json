@@ -12,6 +12,7 @@
     "build": "next build",
     "start": "next start",
     "sync:dev-env": "node scripts/sync-dev-env-from-terraform.mjs",
+    "smoke:hosted-evidence": "node scripts/check-hosted-evidence-smoke.mjs",
     "test": "vitest run",
     "lint": "eslint . --max-warnings=0",
     "typegen": "next typegen",
